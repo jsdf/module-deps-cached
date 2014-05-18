@@ -1,14 +1,12 @@
-# module-deps
+# module-deps-cached
 
 walk the dependency graph to generate json output that can be fed into
 [browser-pack](https://github.com/substack/browser-pack)
 
-[![build status](https://secure.travis-ci.org/substack/module-deps.png)](http://travis-ci.org/substack/module-deps)
-
 # example
 
 ``` js
-var mdeps = require('module-deps');
+var mdeps = require('module-deps-cached');
 var JSONStream = require('JSONStream');
 
 var stringify = JSONStream.stringify();
@@ -23,11 +21,11 @@ output:
 ```
 $ node example/deps.js
 [
-{"id":"/home/substack/projects/module-deps/example/files/main.js","source":"var foo = require('./foo');\nconsole.log('main: ' + foo(5));\n","entry":true,"deps":{"./foo":"/home/substack/projects/module-deps/example/files/foo.js"}}
+{"id":"/Users/jsdf/code/module-deps-cached/example/files/main.js","source":"var foo = require('./foo');\nconsole.log('main: ' + foo(5));\n","entry":true,"deps":{"./foo":"/Users/jsdf/code/module-deps-cached/example/files/foo.js"}}
 ,
-{"id":"/home/substack/projects/module-deps/example/files/foo.js","source":"var bar = require('./bar');\n\nmodule.exports = function (n) {\n    return n * 111 + bar(n);\n};\n","deps":{"./bar":"/home/substack/projects/module-deps/example/files/bar.js"}}
+{"id":"/Users/jsdf/code/module-deps-cached/example/files/foo.js","source":"var bar = require('./bar');\n\nmodule.exports = function (n) {\n    return n * 111 + bar(n);\n};\n","deps":{"./bar":"/Users/jsdf/code/module-deps-cached/example/files/bar.js"}}
 ,
-{"id":"/home/substack/projects/module-deps/example/files/bar.js","source":"module.exports = function (n) {\n    return n * 100;\n};\n","deps":{}}
+{"id":"/Users/jsdf/code/module-deps-cached/example/files/bar.js","source":"module.exports = function (n) {\n    return n * 100;\n};\n","deps":{}}
 ]
 ```
 
@@ -42,7 +40,7 @@ main: 1055
 # usage
 
 ```
-usage: module-deps [files]
+usage: module-deps-cached [files]
 
   generate json output from each entry file
 
@@ -51,7 +49,7 @@ usage: module-deps [files]
 # methods
 
 ``` js
-var mdeps = require('module-deps')
+var mdeps = require('module-deps-cached')
 ```
 
 ## var d = mdeps(files, opts={})
@@ -62,6 +60,9 @@ Return a readable stream `d` of javascript objects from an array of filenames
 Each file in `files` can be a string filename or a stream.
 
 Optionally pass in some `opts`:
+
+* opts.store - a [levelup](https://github.com/rvagg/node-levelup) api compatible 
+datastore for persistent caching
 
 * opts.transform - a string or array of string transforms (see below)
 
@@ -101,7 +102,7 @@ the instantiated transform stream `tr`.
 
 # transforms
 
-module-deps can be configured to run source transformations on files before
+module-deps-cached can be configured to run source transformations on files before
 parsing them for `require()` calls. These transforms are useful if you want to
 compile a language like [coffeescript](http://coffeescript.org/) on the fly or
 if you want to load static assets into your bundle by parsing the AST for
@@ -177,13 +178,13 @@ and `ggg` gets `{"y":4}`:
 With [npm](http://npmjs.org), to get the module do:
 
 ```
-npm install module-deps
+npm install module-deps-cached
 ```
 
-and to get the `module-deps` command do:
+and to get the `module-deps-cached` command do:
 
 ```
-npm install -g module-deps
+npm install -g module-deps-cached
 ```
 
 # license

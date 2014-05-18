@@ -1,5 +1,5 @@
 {
-  "name": "module-deps",
+  "name": "module-deps-cached",
   "version": "1.10.0",
   "description": "walk the dependency graph to generate json output that can be fed into browser-pack",
   "main": "index.js",
@@ -18,16 +18,17 @@
   },
   "devDependencies": {
     "tape": "~2.3.2",
-    "browser-pack": "~0.0.0"
+    "browser-pack": "~0.0.0",
+    "memdown": "^0.10.0"
   },
   "scripts": {
     "test": "tape test/*.js"
   },
   "repository": {
     "type": "git",
-    "url": "git://github.com/substack/module-deps.git"
+    "url": "git://github.com/substack/module-deps-cached.git"
   },
-  "homepage": "https://github.com/substack/module-deps",
+  "homepage": "https://github.com/jsdf/module-deps-cached",
   "keywords": [
     "dependency",
     "graph",
@@ -42,6 +43,13 @@
     "email": "mail@substack.net",
     "url": "http://substack.net"
   },
+  "contributors": [
+    {
+      "name": "James Friend",
+      "email": "james@jsdf.co",
+      "url": "http://jsdf.co"
+    }
+  ],
   "engines": {
     "node": ">= 0.6"
   },

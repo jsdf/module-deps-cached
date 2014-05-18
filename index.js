@@ -9,8 +9,11 @@ var through = require('through');
 var concat = require('concat-stream');
 var parents = require('parents');
 
+var crypto = require('crypto');
+
 module.exports = function (mains, opts) {
     if (!opts) opts = {};
+    var store = opts.store || nullStore();
     var cache = opts.cache;
     var pkgCache = opts.packageCache || {};
     
@@ -197,6 +200,7 @@ module.exports = function (mains, opts) {
     }
     
     function applyTransforms (file, trx, src, pkg) {
+        var digest = hash(src);
         var isTopLevel = mains.some(function (main) {
             var m = path.relative(path.dirname(main), file);
             return m.split('/').indexOf('node_modules') < 0;
@@ -204,6 +208,16 @@ module.exports = function (mains, opts) {
         var transf = (isTopLevel ? transforms : []).concat(trx);
         if (transf.length === 0) return done();
         
+        store.get(digest, function (err, value) {
+            if (err) {
+                // console.warn(err);
+            } else {
+                src = value;
+                return done();
+            }
+        });
+
+
         (function ap (trs) {
             if (trs.length === 0) return done();
             var tr = trs[0], trOpts = {};
@@ -232,6 +246,9 @@ module.exports = function (mains, opts) {
         })(transf);
         
         function done () {
+            store.put(digest, src, function (err) {
+                // if (err) console.warn(err);
+            });
             parseDeps(file, src, pkg);
         }
     }
@@ -343,4 +360,22 @@ function lookupPkg (file, cb) {
             cb(null, pkg);
         });
     })();
+}
+
+function nullStore () {
+    return {
+        get: function(key) {
+            arguments[arguments.length-1](new Error('not implemented'));
+        },
+        put: function(key, value) {
+            arguments[arguments.length-1](new Error('not implemented'));
+        }
+    }
+}
+
+function hash (content) {
+    return crypto
+        .createHash('md5')
+        .update(content)
+        .digest('hex');
 }
