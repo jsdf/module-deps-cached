@@ -3,9 +3,6 @@
   "version": "1.10.0",
   "description": "walk the dependency graph to generate json output that can be fed into browser-pack",
   "main": "index.js",
-  "bin": {
-    "module-deps": "cmd.js"
-  },
   "dependencies": {
     "JSONStream": "~0.7.1",
     "browser-resolve": "~1.2.2",
