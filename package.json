@@ -18,8 +18,7 @@
   },
   "devDependencies": {
     "tape": "~2.3.2",
-    "browser-pack": "~0.0.0",
-    "memdown": "^0.10.0"
+    "browser-pack": "~0.0.0"
   },
   "scripts": {
     "test": "tape test/*.js"

@@ -13,10 +13,10 @@ var crypto = require('crypto');
 
 module.exports = function (mains, opts) {
     if (!opts) opts = {};
-    var store = opts.store || nullStore();
     var cache = opts.cache;
     var pkgCache = opts.packageCache || {};
-    
+    var mtimes = opts.mtimes;
+
     var paths = opts.paths || process.env.NODE_PATH;
     if (typeof paths === 'string') {
         paths = process.env.NODE_PATH.split(':');
@@ -155,31 +155,54 @@ module.exports = function (mains, opts) {
             if (!pkg && pkgCache[file]) pkg = pkgCache[file];
             
             var trx = getTransform(pkg);
-            
-            if (cache && cache[file]) {
-                parseDeps(file, cache[file], pkg);
+
+            var mtimeNew;
+
+            function mtimeCurrent() {
+                if (!mtimes) return true;
+                else return mtimes[file] && mtimeNew && mtimeNew <= mtimes[file];
             }
-            else fs.readFile(file, 'utf8', function (err, src) {
-                if (err) {
-                    var e = new Error(
-                        err.message
-                        + ' while resolving '
-                        + JSON.stringify(id)
-                        + ' from file '
-                        + parent.filename
-                    );
-                    Object.keys(err).forEach(function (key) {
-                        e[key] = err[key];
+            
+            function readFileOrCached() {
+                if (mtimeCurrent() && cache && cache[file]) {
+                    parseDeps(file, cache[file], pkg);
+                } else {
+                    cache && delete cache[file];
+                    mtimeNew && mtimes && (mtimes[file] = mtimeNew);
+                    
+                    fs.readFile(file, 'utf8', function (err, src) {
+                        if (err) {
+                            var e = new Error(
+                                err.message
+                                + ' while resolving '
+                                + JSON.stringify(id)
+                                + ' from file '
+                                + parent.filename
+                            );
+                            Object.keys(err).forEach(function (key) {
+                                e[key] = err[key];
+                            });
+                            if (err.code === 'ENOENT') {
+                                e.type = 'not found';
+                            }
+                            e.parent = parent.filename;
+                            e.filename = file;
+                            return output.emit('error', e);
+                        }
+                        applyTransforms(file, trx, src, pkg);
                     });
-                    if (err.code === 'ENOENT') {
-                        e.type = 'not found';
-                    }
-                    e.parent = parent.filename;
-                    e.filename = file;
-                    return output.emit('error', e);
                 }
-                applyTransforms(file, trx, src, pkg);
-            });
+            }
+
+            if (mtimes) {
+                fs.stat(file, function (err, stat) {
+                    if (!err) mtimeNew = stat.mtime.getTime();
+                    readFileOrCached();
+                });
+            } else {
+                readFileOrCached();
+            }
+
         });
     }
     
@@ -200,26 +223,16 @@ module.exports = function (mains, opts) {
     }
     
     function applyTransforms (file, trx, src, pkg) {
-        var digest = hash(src);
         var isTopLevel = mains.some(function (main) {
             var m = path.relative(path.dirname(main), file);
             return m.split('/').indexOf('node_modules') < 0;
         });
         var transf = (isTopLevel ? transforms : []).concat(trx);
-        if (transf.length === 0) return done();
-        
-        store.get(digest, function (err, value) {
-            if (err) {
-                // console.warn(err);
-            } else {
-                src = value;
-                return done();
-            }
-        });
+        if (transf.length === 0) return done(false);
 
 
         (function ap (trs) {
-            if (trs.length === 0) return done();
+            if (trs.length === 0) return done(true);
             var tr = trs[0], trOpts = {};
             if (Array.isArray(tr)) {
                 trOpts = tr[1];
@@ -245,10 +258,7 @@ module.exports = function (mains, opts) {
             });
         })(transf);
         
-        function done () {
-            store.put(digest, src, function (err) {
-                // if (err) console.warn(err);
-            });
+        function done (transformApplied) {
             parseDeps(file, src, pkg);
         }
     }
@@ -360,22 +370,4 @@ function lookupPkg (file, cb) {
             cb(null, pkg);
         });
     })();
-}
-
-function nullStore () {
-    return {
-        get: function(key) {
-            arguments[arguments.length-1](new Error('not implemented'));
-        },
-        put: function(key, value) {
-            arguments[arguments.length-1](new Error('not implemented'));
-        }
-    }
-}
-
-function hash (content) {
-    return crypto
-        .createHash('md5')
-        .update(content)
-        .digest('hex');
 }
